@@ -43,8 +43,8 @@ const MemberLayout = ({ children }) => {
     const handleLogout = async () => {
         try {
             await axios.get('/members/logout');
-            localStorage.removeItem('libraUserToken');
-            localStorage.removeItem('libraUserData');
+            sessionStorage.removeItem('libraUserToken');
+            sessionStorage.removeItem('libraUserData');
             toast.success('Logged out successfully');
             navigate('/login');
         } catch (error) {

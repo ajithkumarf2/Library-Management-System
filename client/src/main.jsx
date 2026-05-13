@@ -11,8 +11,8 @@ axios.defaults.withCredentials = true
 // Add a request interceptor to include the auth token
 axios.interceptors.request.use(
     (config) => {
-        const adminToken = localStorage.getItem('libraAdminToken');
-        const userToken = localStorage.getItem('libraUserToken');
+        const adminToken = sessionStorage.getItem('libraAdminToken');
+        const userToken = sessionStorage.getItem('libraUserToken');
         
         // If the request is to an admin endpoint, prioritize adminToken
         if (config.url.includes('/admin') && adminToken) {

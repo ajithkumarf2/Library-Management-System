@@ -17,8 +17,8 @@ const Dashboard = () => {
   }, [])
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('libraAdminToken')
-    const adminUser = localStorage.getItem('libraAdminUser')
+    const token = sessionStorage.getItem('libraAdminToken')
+    const adminUser = sessionStorage.getItem('libraAdminUser')
 
     if (!token) {
       navigate('/login')
@@ -32,8 +32,8 @@ const Dashboard = () => {
       setLoading(false)
     } catch (error) {
       console.error('Auth check error:', error)
-      localStorage.removeItem('libraAdminToken')
-      localStorage.removeItem('libraAdminUser')
+      sessionStorage.removeItem('libraAdminToken')
+      sessionStorage.removeItem('libraAdminUser')
       navigate('/login')
     }
   }

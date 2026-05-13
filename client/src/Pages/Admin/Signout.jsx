@@ -13,14 +13,14 @@ const Signout = () => {
     const handleSignout = async () => {
         try {
             await axios.get('/admin/logout')
-            localStorage.removeItem('libraAdminToken')
-            localStorage.removeItem('libraAdminUser')
+            sessionStorage.removeItem('libraAdminToken')
+            sessionStorage.removeItem('libraAdminUser')
             toast.success('Logged out successfully!')
             setTimeout(() => navigate('/login'), 1000)
         } catch (error) {
             console.error('Logout error:', error)
-            localStorage.removeItem('libraAdminToken')
-            localStorage.removeItem('libraAdminUser')
+            sessionStorage.removeItem('libraAdminToken')
+            sessionStorage.removeItem('libraAdminUser')
             navigate('/login')
         }
     }

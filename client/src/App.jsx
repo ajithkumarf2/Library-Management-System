@@ -24,20 +24,20 @@ import IssuedBooks from './Pages/Member/IssuedBooks'
 import ReturnedBooks from './Pages/Member/ReturnedBooks'
 
 const PrivateRoute = ({ children }) => {
-    const isAdmin = localStorage.getItem('libraAdminToken');
+    const isAdmin = sessionStorage.getItem('libraAdminToken');
     return isAdmin ? children : <Navigate to="/login" />;
 };
 
 const MemberPrivateRoute = ({ children }) => {
-    const isUser = localStorage.getItem('libraUserToken');
+    const isUser = sessionStorage.getItem('libraUserToken');
     return isUser ? children : (
         <Navigate to="/login" />
     );
 };
 
 const App = () => {
-  const isAdmin = localStorage.getItem('libraAdminToken');
-  const isUser = localStorage.getItem('libraUserToken');
+  const isAdmin = sessionStorage.getItem('libraAdminToken');
+  const isUser = sessionStorage.getItem('libraUserToken');
 
   return (
     <div>

@@ -10,8 +10,8 @@ const Login = () => {
     const navigate = useNavigate()
 
     React.useEffect(() => {
-        const isAdmin = localStorage.getItem('libraAdminToken');
-        const isUser = localStorage.getItem('libraUserToken');
+        const isAdmin = sessionStorage.getItem('libraAdminToken');
+        const isUser = sessionStorage.getItem('libraUserToken');
         if (isAdmin) navigate('/dashboard');
         else if (isUser) navigate('/user/dashboard');
     }, [navigate]);
@@ -29,8 +29,8 @@ const Login = () => {
             // First attempt Admin login
             try {
                 const adminResponse = await axios.post('/admin/login', { email, password })
-                localStorage.setItem('libraAdminToken', adminResponse.data.token)
-                localStorage.setItem('libraAdminUser', JSON.stringify(adminResponse.data.admin))
+                sessionStorage.setItem('libraAdminToken', adminResponse.data.token)
+                sessionStorage.setItem('libraAdminUser', JSON.stringify(adminResponse.data.admin))
                 toast.success('Admin Login successful!')
                 navigate('/dashboard')
                 return // Exit if admin login is successful
@@ -38,8 +38,8 @@ const Login = () => {
                 // If admin login fails, attempt Member login
                 if (adminError.response?.status === 401 || adminError.response?.status === 404) {
                     const memberResponse = await axios.post('/members/login', { email, password })
-                    localStorage.setItem('libraUserToken', memberResponse.data.token)
-                    localStorage.setItem('libraUserData', JSON.stringify(memberResponse.data.member))
+                    sessionStorage.setItem('libraUserToken', memberResponse.data.token)
+                    sessionStorage.setItem('libraUserData', JSON.stringify(memberResponse.data.member))
                     toast.success('Member Login successful!')
                     navigate('/user/dashboard')
                     return
