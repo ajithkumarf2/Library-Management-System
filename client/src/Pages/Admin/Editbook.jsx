@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import axios from 'axios'
 
-
-const Addbooks = () => {
+const Editbook = () => {
+    const { id } = useParams()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
+    const [fetching, setFetching] = useState(true)
     const [formData, setFormData] = useState({
         title: '',
         author: '',
@@ -14,10 +15,38 @@ const Addbooks = () => {
         category: '',
         quantity: '',
         description: '',
-        shelfLocation: ''
+        shelfLocation: '',
+        document: ''
     })
 
     const [file, setFile] = useState(null)
+
+    useEffect(() => {
+        fetchBook()
+    }, [id])
+
+    const fetchBook = async () => {
+        try {
+            const response = await axios.get(`/books/${id}`)
+            const book = response.data
+            setFormData({
+                title: book.title || '',
+                author: book.author || '',
+                isbn: book.isbn || '',
+                category: book.category || '',
+                quantity: book.quantity || '',
+                description: book.description || '',
+                shelfLocation: book.shelfLocation || '',
+                document: book.document || ''
+            })
+        } catch (error) {
+            console.error('Fetch book error:', error)
+            toast.error('Failed to fetch book details')
+            navigate('/dashboard/viewbooks')
+        } finally {
+            setFetching(false)
+        }
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -49,38 +78,31 @@ const Addbooks = () => {
                 data.append('document', file)
             }
 
-            const response = await axios.post('/books/add', data, {
+            const response = await axios.put(`/books/update/${id}`, data, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
             })
 
-            if (response.status === 201 || response.status === 200) {
-                toast.success('Book added successfully!')
-                setFormData({
-                    title: '',
-                    author: '',
-                    isbn: '',
-                    category: '',
-                    quantity: '',
-                    description: '',
-                    shelfLocation: ''
-                })
-                setFile(null)
+            if (response.status === 200) {
+                toast.success('Book updated successfully!')
                 setTimeout(() => navigate('/dashboard/viewbooks'), 1500)
             }
         } catch (error) {
-            console.error('Add book error:', error)
-            toast.error(error.response?.data?.message || 'Failed to add book')
+            console.error('Update book error:', error)
+            toast.error(error.response?.data?.message || 'Failed to update book')
         } finally {
             setLoading(false)
         }
     }
 
+    if (fetching) {
+        return <div className="text-center py-20">Loading book details...</div>
+    }
 
     return (
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6">Add New Book</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">Edit Book</h2>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,14 +180,16 @@ const Addbooks = () => {
                     </div>
 
                     <div>
-                        <label className="block text-gray-700 font-medium mb-2">Document (PDF or Word)</label>
+                        <label className="block text-gray-700 font-medium mb-2">Update Document (PDF only)</label>
                         <input
                             type="file"
                             onChange={handleFileChange}
-                            accept=".pdf,.doc,.docx"
+                            accept=".pdf"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <p className="text-[10px] text-gray-500 mt-1 italic">Tip: Use PDF for the best "Read-Only" protection.</p>
+                        {formData.document && (
+                            <p className="text-xs text-blue-600 mt-1">Current: {formData.document.split('\\').pop()}</p>
+                        )}
                     </div>
                 </div>
 
@@ -187,11 +211,11 @@ const Addbooks = () => {
                         disabled={loading}
                         className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 disabled:opacity-50"
                     >
-                        {loading ? 'Adding...' : 'Add Book'}
+                        {loading ? 'Updating...' : 'Update Book'}
                     </button>
                     <button
                         type="button"
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate('/dashboard/viewbooks')}
                         className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
                     >
                         Cancel
@@ -202,4 +226,4 @@ const Addbooks = () => {
     )
 }
 
-export default Addbooks
+export default Editbook

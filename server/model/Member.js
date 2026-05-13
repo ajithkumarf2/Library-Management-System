@@ -36,6 +36,7 @@ export const createBooksTable = async () => {
             availableQuantity INT NOT NULL DEFAULT 1,
             description TEXT,
             shelfLocation VARCHAR(100),
+            document VARCHAR(255),
             status ENUM('available', 'unavailable') DEFAULT 'available',
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -44,6 +45,13 @@ export const createBooksTable = async () => {
     
     try {
         await db.query(createTable);
+        // Ensure document column exists for existing tables
+        try {
+            await db.query('ALTER TABLE books ADD COLUMN document VARCHAR(255) AFTER shelfLocation');
+            console.log("Added document column to books table");
+        } catch (alterError) {
+            // Column might already exist, which is fine
+        }
         console.log("Books table created/verified");
     } catch (error) {
         console.error("Error creating books table:", error.message);

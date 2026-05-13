@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Edit } from 'lucide-react'
 import axios from 'axios'
 
 const Viewbooks = () => {
@@ -84,6 +84,7 @@ const Viewbooks = () => {
                             <th className="px-4 py-3 text-left font-semibold">Quantity</th>
                             <th className="px-4 py-3 text-left font-semibold">Available</th>
                             <th className="px-4 py-3 text-left font-semibold">Location</th>
+                            <th className="px-4 py-3 text-left font-semibold">Doc</th>
                             <th className="px-4 py-3 text-left font-semibold">Actions</th>
                         </tr>
                     </thead>
@@ -108,10 +109,25 @@ const Viewbooks = () => {
                                         </span>
                                     </td>
                                     <td className="px-4 py-3">{book.shelfLocation || '-'}</td>
-                                    <td className="px-4 py-3 flex gap-2">
+                                    <td className="px-4 py-3">
+                                        {book.document ? (
+                                            <span className="text-green-600 font-bold" title={book.document}>Yes</span>
+                                        ) : (
+                                            <span className="text-gray-400">No</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 flex gap-3">
+                                        <button
+                                            onClick={() => navigate(`/dashboard/editbook/${book.id}`)}
+                                            className="text-blue-600 hover:text-blue-800"
+                                            title="Edit Book"
+                                        >
+                                            <Edit size={20} />
+                                        </button>
                                         <button
                                             onClick={() => handleDelete(book.id)}
                                             className="text-red-600 hover:text-red-800"
+                                            title="Delete Book"
                                         >
                                             <Trash2 size={20} />
                                         </button>

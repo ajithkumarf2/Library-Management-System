@@ -20,6 +20,12 @@ import adminRoutes from "./routes/adminRoutes.js";
 import studyRoomRoutes from "./routes/studyRoomRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -30,6 +36,16 @@ app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173', 
     credentials: true
 }));
+
+// Custom route for serving uploads with inline disposition
+app.get('/uploads/:filename', (req, res) => {
+    const filePath = path.join(__dirname, 'uploads', req.params.filename);
+    res.setHeader('Content-Disposition', 'inline');
+    res.sendFile(filePath);
+});
+
+// Fallback for other files in uploads
+app.use('/uploads', express.static('uploads'));
 
 // Initialize database tables
 const initializeTables = async () => {

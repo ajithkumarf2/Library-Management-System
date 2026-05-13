@@ -13,6 +13,7 @@ import Bookhistory from './Pages/Admin/Bookhistory'
 import Studyroom from './Pages/Admin/Studyroom'
 import Signout from './Pages/Admin/Signout'
 import Editmember from './Pages/Admin/Editmember'
+import Editbook from './Pages/Admin/Editbook'
 import MemberDashboard from './Pages/Member/Dashboard'
 import MemberLayout from './Pages/Member/MemberLayout'
 import BrowseBooks from './Pages/Member/BrowseBooks'
@@ -66,6 +67,7 @@ const App = () => {
           <Route path='editmember/:id' element={<Editmember />} />
           <Route path='addbooks' element={<Addbooks />} />
           <Route path='viewbooks' element={<Viewbooks />} />
+          <Route path='editbook/:id' element={<Editbook />} />
           <Route path='issuedbooks' element={<Issuedbook />} />
           <Route path='returnedbooks' element={<Returnedbook />} />
           <Route path='bookhistory' element={<Bookhistory />} />
