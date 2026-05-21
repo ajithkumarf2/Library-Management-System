@@ -155,7 +155,7 @@ const IssuedBooks = () => {
                         <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-widest">
                             <tr>
                                 <th className="px-8 py-4">Book Details</th>
-                                <th className="px-8 py-4">Issue Date</th>
+                                <th className="px-8 py-4">Issue Date & Time</th>
                                 <th className="px-8 py-4">Due Date</th>
                                 <th className="px-8 py-4">Status</th>
                             </tr>
@@ -189,7 +189,9 @@ const IssuedBooks = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 text-sm text-slate-600 font-medium">{new Date(issue.issueDate).toLocaleDateString()}</td>
+                                            <td className="px-8 py-6 text-sm text-slate-600 font-medium">
+                                                {new Date(issue.issueDate).toLocaleDateString()} {new Date(issue.issueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </td>
                                             <td className="px-8 py-6 text-sm text-slate-600 font-medium">{new Date(issue.dueDate).toLocaleDateString()}</td>
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-3">

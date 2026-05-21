@@ -1,8 +1,13 @@
 import db from '../config/db.js';
+import { FINE_RATE_PER_DAY, calculateFine, getDaysOverdue } from '../utils/constants.js';
 
-const FINE_PER_DAY = 10; // Fine per day in currency
+// Helper function to compute fine for an issue record (3NF fix: compute instead of store)
+const computeIssueWithFine = (issue) => {
+    const fine = issue.status === 'returned' ? calculateFine(issue.returnDate, issue.dueDate) : 0;
+    return { ...issue, fine };
+};
 
-// Issue Book
+// Issue Book (Product)
 export const issueBook = async (req, res) => {
     try {
         const { memberId, bookId, dueDate } = req.body;
@@ -17,14 +22,20 @@ export const issueBook = async (req, res) => {
             return res.status(404).json({ message: 'Member not found' });
         }
 
-        // Check if book exists and is available
-        const [books] = await db.query('SELECT * FROM books WHERE id = ?', [bookId]);
+        // Check if product exists and is available
+        const [books] = await db.query(
+            `SELECT p.*, ps.Available as availableQuantity, p.PK_Product_KEY 
+             FROM Product p 
+             JOIN Product_Stock ps ON p.PK_Product_id = ps.Product_ID 
+             WHERE p.PK_Product_id = ?`,
+            [bookId]
+        );
         if (books.length === 0) {
-            return res.status(404).json({ message: 'Book not found' });
+            return res.status(404).json({ message: 'Product not found' });
         }
 
         if (books[0].availableQuantity <= 0) {
-            return res.status(400).json({ message: 'Book is not available' });
+            return res.status(400).json({ message: 'Product is not available' });
         }
 
         // Check if book is already issued to this member
@@ -33,7 +44,7 @@ export const issueBook = async (req, res) => {
             [memberId, bookId]
         );
         if (issuedBooks.length > 0) {
-            return res.status(400).json({ message: 'Member has already issued this book' });
+            return res.status(400).json({ message: 'Member has already issued this product' });
         }
 
         // Issue book
@@ -43,9 +54,19 @@ export const issueBook = async (req, res) => {
         );
 
         // Update available quantity
-        await db.query('UPDATE books SET availableQuantity = availableQuantity - 1 WHERE id = ?', [bookId]);
+        await db.query('UPDATE Product_Stock SET Available = Available - 1 WHERE Product_ID = ?', [bookId]);
 
-        res.status(201).json({ message: 'Book issued successfully', issueId: result.insertId });
+        // Log transaction in Outwards
+        const hexKey = books[0].PK_Product_KEY;
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toTimeString().split(' ')[0];
+        await db.query(
+            'INSERT INTO Outwards (O_Date, O_Time, FK_Product_KEY, O_Qty, O_Price) VALUES (?, ?, ?, ?, ?)',
+            [dateStr, timeStr, hexKey, 1, 0.00]
+        );
+
+        res.status(201).json({ message: 'Product issued successfully', issueId: result.insertId });
     } catch (error) {
         console.error('Issue book error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -64,13 +85,19 @@ export const selfIssueBook = async (req, res) => {
         const dueDateStr = dueDate.toISOString().split('T')[0];
 
         if (!bookId) {
-            return res.status(400).json({ message: 'Book ID is required' });
+            return res.status(400).json({ message: 'Product ID is required' });
         }
 
-        // Check if book exists
-        const [books] = await db.query('SELECT * FROM books WHERE id = ?', [bookId]);
+        // Check if product exists
+        const [books] = await db.query(
+            `SELECT p.*, ps.Available as availableQuantity, p.PK_Product_KEY 
+             FROM Product p 
+             JOIN Product_Stock ps ON p.PK_Product_id = ps.Product_ID 
+             WHERE p.PK_Product_id = ?`,
+            [bookId]
+        );
         if (books.length === 0) {
-            return res.status(404).json({ message: 'Book not found' });
+            return res.status(404).json({ message: 'Product not found' });
         }
 
         // Check if book is already issued to this member
@@ -80,12 +107,12 @@ export const selfIssueBook = async (req, res) => {
         );
         
         if (existing.length > 0) {
-            return res.status(200).json({ message: 'Book already issued', issueId: existing[0].id });
+            return res.status(200).json({ message: 'Product already issued', issueId: existing[0].id });
         }
 
         // Check availability
         if (books[0].availableQuantity <= 0) {
-            return res.status(400).json({ message: 'Book is not available for issue' });
+            return res.status(400).json({ message: 'Product is not available for issue' });
         }
 
         // Issue book
@@ -95,9 +122,19 @@ export const selfIssueBook = async (req, res) => {
         );
 
         // Update available quantity
-        await db.query('UPDATE books SET availableQuantity = availableQuantity - 1 WHERE id = ?', [bookId]);
+        await db.query('UPDATE Product_Stock SET Available = Available - 1 WHERE Product_ID = ?', [bookId]);
 
-        res.status(201).json({ message: 'Book issued for reading', issueId: result.insertId });
+        // Log transaction in Outwards
+        const hexKey = books[0].PK_Product_KEY;
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toTimeString().split(' ')[0];
+        await db.query(
+            'INSERT INTO Outwards (O_Date, O_Time, FK_Product_KEY, O_Qty, O_Price) VALUES (?, ?, ?, ?, ?)',
+            [dateStr, timeStr, hexKey, 1, 0.00]
+        );
+
+        res.status(201).json({ message: 'Product issued for reading', issueId: result.insertId });
     } catch (error) {
         console.error('Self issue error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -108,7 +145,9 @@ export const selfIssueBook = async (req, res) => {
 export const returnBook = async (req, res) => {
     try {
         const { issueId } = req.params;
-        const returnDate = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const returnDateTime = now.toISOString().slice(0, 19).replace('T', ' '); // Format: YYYY-MM-DD HH:MM:SS
+        const returnDate = now.toISOString().split('T')[0]; // For date comparison only
 
         // Get issue record
         const [issues] = await db.query('SELECT * FROM issueHistory WHERE id = ?', [issueId]);
@@ -118,29 +157,34 @@ export const returnBook = async (req, res) => {
 
         const issue = issues[0];
         if (issue.status !== 'issued') {
-            return res.status(400).json({ message: 'Book is not currently issued' });
+            return res.status(400).json({ message: 'Product is not currently issued' });
         }
 
-        // Calculate fine if overdue
-        const dueDate = new Date(issue.dueDate);
-        const currentDate = new Date(returnDate);
-        let fine = 0;
+        // Calculate fine (COMPUTED, not stored)
+        const fine = calculateFine(returnDate, issue.dueDate);
 
-        if (currentDate > dueDate) {
-            const daysOverdue = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24));
-            fine = daysOverdue * FINE_PER_DAY;
-        }
-
-        // Update issue record
+        // Update issue record with datetime (NO fine column stored)
         await db.query(
-            'UPDATE issueHistory SET returnDate = ?, status = ?, fine = ? WHERE id = ?',
-            [returnDate, 'returned', fine, issueId]
+            'UPDATE issueHistory SET returnDate = ?, status = ? WHERE id = ?',
+            [returnDateTime, 'returned', issueId]
         );
 
         // Update available quantity
-        await db.query('UPDATE books SET availableQuantity = availableQuantity + 1 WHERE id = ?', [issue.bookId]);
+        await db.query('UPDATE Product_Stock SET Available = Available + 1 WHERE Product_ID = ?', [issue.bookId]);
 
-        res.json({ message: 'Book returned successfully', fine, issueId });
+        // Log transaction in Inwards
+        const [products] = await db.query('SELECT PK_Product_KEY FROM Product WHERE PK_Product_id = ?', [issue.bookId]);
+        if (products.length > 0) {
+            const hexKey = products[0].PK_Product_KEY;
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0];
+            await db.query(
+                'INSERT INTO Inwards (I_Date, I_Time, FK_Product_KEY, I_Qty, I_Price) VALUES (?, ?, ?, ?, ?)',
+                [dateStr, timeStr, hexKey, 1, fine || 0.00]
+            );
+        }
+
+        res.json({ message: 'Product returned successfully', fine, issueId });
     } catch (error) {
         console.error('Return book error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -164,18 +208,31 @@ export const selfReturnBook = async (req, res) => {
         }
 
         const bookId = issues[0].bookId;
-        const returnDate = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const returnDateTime = now.toISOString().slice(0, 19).replace('T', ' '); // Format: YYYY-MM-DD HH:MM:SS
 
-        // Update issue status
+        // Update issue status with datetime
         await db.query(
             'UPDATE issueHistory SET status = "returned", returnDate = ? WHERE id = ?',
-            [returnDate, issueId]
+            [returnDateTime, issueId]
         );
 
         // Update available quantity
-        await db.query('UPDATE books SET availableQuantity = availableQuantity + 1 WHERE id = ?', [bookId]);
+        await db.query('UPDATE Product_Stock SET Available = Available + 1 WHERE Product_ID = ?', [bookId]);
 
-        res.status(200).json({ message: 'Book returned successfully' });
+        // Log transaction in Inwards
+        const [products] = await db.query('SELECT PK_Product_KEY FROM Product WHERE PK_Product_id = ?', [bookId]);
+        if (products.length > 0) {
+            const hexKey = products[0].PK_Product_KEY;
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().split(' ')[0];
+            await db.query(
+                'INSERT INTO Inwards (I_Date, I_Time, FK_Product_KEY, I_Qty, I_Price) VALUES (?, ?, ?, ?, ?)',
+                [dateStr, timeStr, hexKey, 1, 0.00]
+            );
+        }
+
+        res.status(200).json({ message: 'Product returned successfully' });
     } catch (error) {
         console.error('Self return error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -188,9 +245,9 @@ export const getIssueHistory = async (req, res) => {
         const { memberId } = req.query;
 
         let query = `
-            SELECT ih.*, b.title AS bookTitle, b.author, b.isbn, b.document, m.name AS memberName, m.email
+            SELECT ih.*, p.Product_name AS bookTitle, p.Product_short_desc AS author, p.isbn, p.document, m.name AS memberName, m.email
             FROM issueHistory ih
-            JOIN books b ON ih.bookId = b.id
+            JOIN Product p ON ih.bookId = p.PK_Product_id
             JOIN members m ON ih.memberId = m.id
         `;
 
@@ -201,7 +258,11 @@ export const getIssueHistory = async (req, res) => {
         query += ' ORDER BY ih.issueDate DESC';
 
         const [issues] = await db.query(query);
-        res.json(issues);
+        
+        // Compute fine for each issue (3NF fix)
+        const issuesWithFine = issues.map(computeIssueWithFine);
+        
+        res.json(issuesWithFine);
     } catch (error) {
         console.error('Get issue history error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -212,15 +273,18 @@ export const getIssueHistory = async (req, res) => {
 export const getIssuedBooks = async (req, res) => {
     try {
         const [issuedBooks] = await db.query(`
-            SELECT ih.*, b.title AS bookTitle, b.author, b.isbn, b.document, m.name AS memberName, m.email
+            SELECT ih.*, p.Product_name AS bookTitle, p.Product_short_desc AS author, p.isbn, p.document, m.name AS memberName, m.email
             FROM issueHistory ih
-            JOIN books b ON ih.bookId = b.id
+            JOIN Product p ON ih.bookId = p.PK_Product_id
             JOIN members m ON ih.memberId = m.id
             WHERE ih.status = 'issued'
             ORDER BY ih.issueDate DESC
         `);
 
-        res.json(issuedBooks);
+        // Compute fine for each issue (3NF fix)
+        const booksWithFine = issuedBooks.map(computeIssueWithFine);
+        
+        res.json(booksWithFine);
     } catch (error) {
         console.error('Get issued books error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -231,15 +295,18 @@ export const getIssuedBooks = async (req, res) => {
 export const getReturnedBooks = async (req, res) => {
     try {
         const [returnedBooks] = await db.query(`
-            SELECT ih.*, b.title AS bookTitle, b.author, b.isbn, b.document, m.name AS memberName, m.email
+            SELECT ih.*, p.Product_name AS bookTitle, p.Product_short_desc AS author, p.isbn, p.document, m.name AS memberName, m.email
             FROM issueHistory ih
-            JOIN books b ON ih.bookId = b.id
+            JOIN Product p ON ih.bookId = p.PK_Product_id
             JOIN members m ON ih.memberId = m.id
             WHERE ih.status = 'returned'
             ORDER BY ih.returnDate DESC
         `);
 
-        res.json(returnedBooks);
+        // Compute fine for each issue (3NF fix)
+        const booksWithFine = returnedBooks.map(computeIssueWithFine);
+        
+        res.json(booksWithFine);
     } catch (error) {
         console.error('Get returned books error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -252,15 +319,18 @@ export const getOverdueBooks = async (req, res) => {
         const currentDate = new Date().toISOString().split('T')[0];
 
         const [overdueBooks] = await db.query(`
-            SELECT ih.*, b.title AS bookTitle, b.author, b.isbn, b.document, m.name AS memberName, m.email
+            SELECT ih.*, p.Product_name AS bookTitle, p.Product_short_desc AS author, p.isbn, p.document, m.name AS memberName, m.email
             FROM issueHistory ih
-            JOIN books b ON ih.bookId = b.id
+            JOIN Product p ON ih.bookId = p.PK_Product_id
             JOIN members m ON ih.memberId = m.id
             WHERE ih.status = 'issued' AND ih.dueDate < ?
             ORDER BY ih.dueDate ASC
         `, [currentDate]);
 
-        res.json(overdueBooks);
+        // Compute fine for each issue (3NF fix)
+        const booksWithFine = overdueBooks.map(computeIssueWithFine);
+        
+        res.json(booksWithFine);
     } catch (error) {
         console.error('Get overdue books error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -273,14 +343,17 @@ export const getMemberIssues = async (req, res) => {
         const { memberId } = req.params;
 
         const [issues] = await db.query(`
-            SELECT ih.*, b.title AS bookTitle, b.author, b.isbn, b.document
+            SELECT ih.*, p.Product_name AS bookTitle, p.Product_short_desc AS author, p.isbn, p.document
             FROM issueHistory ih
-            JOIN books b ON ih.bookId = b.id
+            JOIN Product p ON ih.bookId = p.PK_Product_id
             WHERE ih.memberId = ?
             ORDER BY ih.issueDate DESC
         `, [memberId]);
 
-        res.json(issues);
+        // Compute fine for each issue (3NF fix)
+        const issuesWithFine = issues.map(computeIssueWithFine);
+        
+        res.json(issuesWithFine);
     } catch (error) {
         console.error('Get member issues error:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -305,7 +378,7 @@ export const getMemberAnalytics = async (req, res) => {
 
         // 2. Genre Distribution
         const [genres] = await db.query(
-            'SELECT b.category as name, COUNT(*) as count FROM issueHistory ih JOIN books b ON ih.bookId = b.id WHERE ih.memberId = ? GROUP BY b.category',
+            'SELECT p.category as name, COUNT(*) as count FROM issueHistory ih JOIN Product p ON ih.bookId = p.PK_Product_id WHERE ih.memberId = ? GROUP BY p.category',
             [memberId]
         );
 
@@ -332,13 +405,36 @@ export const getMemberAnalytics = async (req, res) => {
                 { label: 'Books Read', value: (totalBooks[0].count || 0).toString(), color: 'bg-blue-500', icon: 'FiBook' },
                 { label: 'Books Returned', value: (returnedBooks[0].count || 0).toString(), color: 'bg-emerald-500', icon: 'FiCheckCircle' },
                 { label: 'Reading Sessions', value: (totalBooks[0].count || 0).toString(), color: 'bg-orange-500', icon: 'FiClock' },
-                { label: 'Achievements', value: Math.floor((totalBooks[0].count || 0) / 5).toString(), color: 'bg-purple-500', icon: 'FiAward' },
             ],
             genres: formattedGenres,
-            activity: activity
+            activity: activity.map(act => ({
+                month: act.month,
+                count: parseInt(act.count, 10) || 0
+            }))
         });
     } catch (error) {
         console.error('Get analytics error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Get Members for a specific Book
+export const getBookMembers = async (req, res) => {
+    try {
+        const { bookId } = req.params;
+
+        const [members] = await db.query(`
+            SELECT DISTINCT ih.id, m.id as memberId, m.name, m.email, m.membershipType, 
+                   ih.issueDate, ih.returnDate, ih.status, ih.dueDate
+            FROM issueHistory ih
+            JOIN members m ON ih.memberId = m.id
+            WHERE ih.bookId = ?
+            ORDER BY ih.issueDate DESC
+        `, [bookId]);
+
+        res.json(members);
+    } catch (error) {
+        console.error('Get book members error:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };

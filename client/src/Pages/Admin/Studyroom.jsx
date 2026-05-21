@@ -5,11 +5,13 @@ import axios from 'axios'
 
 const Studyroom = () => {
     const [rooms, setRooms] = useState([])
+    const [members, setMembers] = useState([])
     const [loading, setLoading] = useState(true)
     const [bookings, setBookings] = useState([])
     const [showBooking, setShowBooking] = useState(false)
     const [showCreate, setShowCreate] = useState(false)
     const [bookingForm, setBookingForm] = useState({
+        memberId: '',
         roomId: '',
         bookingDate: '',
         startTime: '',
@@ -26,12 +28,14 @@ const Studyroom = () => {
 
     const fetchRoomsAndBookings = async () => {
         try {
-            const [roomsRes, bookingsRes] = await Promise.all([
+            const [roomsRes, bookingsRes, membersRes] = await Promise.all([
                 axios.get('/studyroom/all').catch(() => ({ data: [] })),
-                axios.get('/studyroom/bookings').catch(() => ({ data: [] }))
+                axios.get('/studyroom/bookings').catch(() => ({ data: [] })),
+                axios.get('/members/all').catch(() => ({ data: [] }))
             ])
             setRooms(roomsRes.data || [])
             setBookings(bookingsRes.data || [])
+            setMembers(membersRes.data || [])
         } catch (error) {
             console.error('Fetch study rooms error:', error)
             toast.error('Failed to fetch study rooms')
@@ -58,16 +62,19 @@ const Studyroom = () => {
 
     const handleBookRoom = async (e) => {
         e.preventDefault()
-        if (!bookingForm.roomId || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime) {
+        if (!bookingForm.memberId || !bookingForm.roomId || !bookingForm.bookingDate || !bookingForm.startTime || !bookingForm.endTime) {
             toast.error('Please fill in all fields')
             return
         }
 
         try {
-            const response = await axios.post('/studyroom/book', bookingForm)
+            const response = await axios.post('/studyroom/book', {
+                ...bookingForm,
+                memberId: parseInt(bookingForm.memberId, 10)
+            })
             if (response.status === 201 || response.status === 200) {
                 toast.success('Room booked successfully!')
-                setBookingForm({ roomId: '', bookingDate: '', startTime: '', endTime: '' })
+                setBookingForm({ memberId: '', roomId: '', bookingDate: '', startTime: '', endTime: '' })
                 setShowBooking(false)
                 fetchRoomsAndBookings()
             }
@@ -173,6 +180,23 @@ const Studyroom = () => {
                     <form onSubmit={handleBookRoom} className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
+                                <label className="block text-gray-700 font-medium mb-2">Select Member *</label>
+                                <select
+                                    name="memberId"
+                                    value={bookingForm.memberId}
+                                    onChange={handleBookingChange}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                >
+                                    <option value="">-- Select Member --</option>
+                                    {members.map(member => (
+                                        <option key={member.id} value={member.id}>
+                                            {member.name} ({member.email})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
                                 <label className="block text-gray-700 font-medium mb-2">Room *</label>
                                 <select
                                     name="roomId"
@@ -233,12 +257,13 @@ const Studyroom = () => {
                 </div>
             )}
 
-            <h3 className="text-2xl font-bold mb-4">Your Bookings</h3>
+            <h3 className="text-2xl font-bold mb-4">All Bookings</h3>
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead className="bg-gray-200">
                         <tr>
                             <th className="px-4 py-3 text-left font-semibold">Room</th>
+                            <th className="px-4 py-3 text-left font-semibold">Member</th>
                             <th className="px-4 py-3 text-left font-semibold">Date</th>
                             <th className="px-4 py-3 text-left font-semibold">Time</th>
                             <th className="px-4 py-3 text-left font-semibold">Status</th>
@@ -247,7 +272,7 @@ const Studyroom = () => {
                     <tbody>
                         {bookings.length === 0 ? (
                             <tr>
-                                <td colSpan="4" className="px-4 py-4 text-center text-gray-500">
+                                <td colSpan="5" className="px-4 py-4 text-center text-gray-500">
                                     No bookings
                                 </td>
                             </tr>
@@ -255,6 +280,16 @@ const Studyroom = () => {
                             bookings.map(booking => (
                                 <tr key={booking.id} className="border-b hover:bg-gray-50">
                                     <td className="px-4 py-3">{booking.roomNumber || 'N/A'}</td>
+                                    <td className="px-4 py-3">
+                                        {booking.memberName ? (
+                                            <div>
+                                                <div className="font-semibold text-gray-800">{booking.memberName}</div>
+                                                <div className="text-xs text-gray-500">{booking.memberEmail}</div>
+                                            </div>
+                                        ) : (
+                                            <span className="text-gray-400">N/A</span>
+                                        )}
+                                    </td>
                                     <td className="px-4 py-3">{new Date(booking.bookingDate).toLocaleDateString()}</td>
                                     <td className="px-4 py-3">{booking.startTime} - {booking.endTime}</td>
                                     <td className="px-4 py-3">

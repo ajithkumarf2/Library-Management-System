@@ -36,9 +36,10 @@ export const getWishlist = async (req, res) => {
 
     try {
         const [wishlist] = await db.query(
-            `SELECT w.id as wishlistId, b.* 
+            `SELECT w.id as wishlistId, p.PK_Product_id as id, p.Product_name as title, p.Product_short_desc as author, p.Product_long_desc as description, p.PK_Product_KEY, p.isbn, p.category, p.shelfLocation, p.document, p.status, p.createdAt, p.updatedAt, ps.QTY as quantity, ps.Available as availableQuantity
              FROM wishlist w 
-             JOIN books b ON w.bookId = b.id 
+             JOIN Product p ON w.bookId = p.PK_Product_id 
+             LEFT JOIN Product_Stock ps ON p.PK_Product_id = ps.Product_ID
              WHERE w.memberId = ?`,
             [memberId]
         );

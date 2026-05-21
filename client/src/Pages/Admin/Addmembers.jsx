@@ -9,12 +9,16 @@ const Addmembers = () => {
     const [loading, setLoading] = useState(false)
     const [role, setRole] = useState('member') // 'member' or 'admin'
     const [formData, setFormData] = useState({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
         phone: '',
         membershipType: 'standard',
-        address: ''
+        street: '',
+        city: '',
+        state: '',
+        pincode: ''
     })
 
     const handleChange = (e) => {
@@ -28,22 +32,41 @@ const Addmembers = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        if (!formData.name || !formData.email || !formData.password) {
-            toast.error('Name, email, and password are required')
+        const fullName = `${formData.firstName} ${formData.lastName}`.trim()
+
+        if (!fullName || !formData.email || !formData.password) {
+            toast.error('First name, last name, email, and password are required')
+            return
+        }
+
+        if (role === 'member' && formData.phone && !/^\d{10}$/.test(formData.phone)) {
+            toast.error('Phone number must be exactly 10 digits')
             return
         }
 
         setLoading(true)
         try {
             let response;
+            const payload = {
+                name: fullName,
+                email: formData.email,
+                password: formData.password,
+                phone: formData.phone,
+                membershipType: formData.membershipType,
+                street: formData.street,
+                city: formData.city,
+                state: formData.state,
+                pincode: formData.pincode
+            }
+
             if (role === 'member') {
-                response = await axios.post('/members/register', formData);
+                response = await axios.post('/members/register', payload);
             } else {
                 // Admin registration
                 response = await axios.post('/admin/register', {
-                    name: formData.name,
-                    email: formData.email,
-                    password: formData.password,
+                    name: payload.name,
+                    email: payload.email,
+                    password: payload.password,
                     role: 'admin' // Default role
                 });
             }
@@ -51,12 +74,16 @@ const Addmembers = () => {
             if (response.status === 201) {
                 toast.success(`${role.charAt(0).toUpperCase() + role.slice(1)} added successfully!`)
                 setFormData({
-                    name: '',
+                    firstName: '',
+                    lastName: '',
                     email: '',
                     password: '',
                     phone: '',
                     membershipType: 'standard',
-                    address: ''
+                    street: '',
+                    city: '',
+                    state: '',
+                    pincode: ''
                 })
                 setTimeout(() => navigate(role === 'member' ? '/dashboard/members' : '/dashboard'), 1500)
             } else {
@@ -98,13 +125,24 @@ const Addmembers = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-gray-700 font-medium mb-2">Name *</label>
+                        <label className="block text-gray-700 font-medium mb-2">First Name *</label>
                         <input
                             type="text"
-                            name="name"
-                            value={formData.name}
+                            name="firstName"
+                            value={formData.firstName}
                             onChange={handleChange}
-                            placeholder={`Enter ${role} name`}
+                            placeholder={`Enter first name`}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-gray-700 font-medium mb-2">Last Name *</label>
+                        <input
+                            type="text"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            placeholder={`Enter last name`}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
@@ -142,6 +180,7 @@ const Addmembers = () => {
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
+                                    maxLength={10}
                                     placeholder="Enter phone number"
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
@@ -167,14 +206,40 @@ const Addmembers = () => {
                 {role === 'member' && (
                     <div>
                         <label className="block text-gray-700 font-medium mb-2">Address</label>
-                        <textarea
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            placeholder="Enter member address"
-                            rows="3"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input
+                                type="text"
+                                name="street"
+                                value={formData.street}
+                                onChange={handleChange}
+                                placeholder="Street Address"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleChange}
+                                placeholder="City"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                                type="text"
+                                name="state"
+                                value={formData.state}
+                                onChange={handleChange}
+                                placeholder="State"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                                type="text"
+                                name="pincode"
+                                value={formData.pincode}
+                                onChange={handleChange}
+                                placeholder="Pincode"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
                     </div>
                 )}
 
@@ -199,4 +264,4 @@ const Addmembers = () => {
     )
 }
 
-export default Addmembers
+export default Addmembers

@@ -1,5 +1,31 @@
 import db from '../config/db.js';
 
+// Reusable helper to execute schema definitions cleanly
+const executeSchemaQuery = async (query, tableName) => {
+    try {
+        await db.query(query);
+        console.log(` ${tableName} table verified/created successfully`);
+    } catch (error) {
+        console.error(` Error setting up ${tableName} table:`, error.message);
+    }
+};
+
+// Create member_address table for normalized address storage
+export const createMemberAddressTable = async () => {
+    const createTable = `
+        CREATE TABLE IF NOT EXISTS member_address (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            street VARCHAR(255),
+            city VARCHAR(100) NOT NULL,
+            state VARCHAR(100) NOT NULL,
+            pincode VARCHAR(6) NOT NULL,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `;
+    await executeSchemaQuery(createTable, "Member Address");
+};
+
 export const createMembersTable = async () => {
     const createTable = `
         CREATE TABLE IF NOT EXISTS members (
@@ -9,32 +35,26 @@ export const createMembersTable = async () => {
             password VARCHAR(255) NOT NULL,
             phone VARCHAR(15),
             membershipType VARCHAR(50) DEFAULT 'standard',
-            address TEXT,
+            address_id INT UNIQUE,
             status ENUM('active', 'inactive') DEFAULT 'active',
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (address_id) REFERENCES member_address(id) ON DELETE SET NULL
         )
     `;
-    
-    try {
-        await db.query(createTable);
-        console.log("Members table created/verified");
-    } catch (error) {
-        console.error("Error creating members table:", error.message);
-    }
+    await executeSchemaQuery(createTable, "Members");
 };
 
 export const createBooksTable = async () => {
-    const createTable = `
-        CREATE TABLE IF NOT EXISTS books (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
-            author VARCHAR(255) NOT NULL,
+    const createProductTable = `
+        CREATE TABLE IF NOT EXISTS Product (
+            PK_Product_id INT AUTO_INCREMENT PRIMARY KEY,
+            Product_name VARCHAR(255) NOT NULL,
+            Product_short_desc VARCHAR(255),
+            Product_long_desc TEXT,
+            PK_Product_KEY VARCHAR(16) NOT NULL UNIQUE,
             isbn VARCHAR(20) UNIQUE,
             category VARCHAR(100),
-            quantity INT NOT NULL DEFAULT 1,
-            availableQuantity INT NOT NULL DEFAULT 1,
-            description TEXT,
             shelfLocation VARCHAR(100),
             document VARCHAR(255),
             status ENUM('available', 'unavailable') DEFAULT 'available',
@@ -42,20 +62,42 @@ export const createBooksTable = async () => {
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
     `;
-    
-    try {
-        await db.query(createTable);
-        // Ensure document column exists for existing tables
-        try {
-            await db.query('ALTER TABLE books ADD COLUMN document VARCHAR(255) AFTER shelfLocation');
-            console.log("Added document column to books table");
-        } catch (alterError) {
-            // Column might already exist, which is fine
-        }
-        console.log("Books table created/verified");
-    } catch (error) {
-        console.error("Error creating books table:", error.message);
-    }
+    const createStockTable = `
+        CREATE TABLE IF NOT EXISTS Product_Stock (
+            PS_ID INT AUTO_INCREMENT PRIMARY KEY,
+            Product_ID INT NOT NULL UNIQUE,
+            QTY INT NOT NULL DEFAULT 0,
+            Available INT NOT NULL DEFAULT 0,
+            FOREIGN KEY (Product_ID) REFERENCES Product(PK_Product_id) ON DELETE CASCADE
+        )
+    `;
+    const createInwardsTable = `
+        CREATE TABLE IF NOT EXISTS Inwards (
+            PK_I_ID INT AUTO_INCREMENT PRIMARY KEY,
+            I_Date DATE NOT NULL,
+            I_Time TIME NOT NULL,
+            FK_Product_KEY VARCHAR(16) NOT NULL,
+            I_Qty INT NOT NULL,
+            I_Price DECIMAL(10, 2) NOT NULL,
+            FOREIGN KEY (FK_Product_KEY) REFERENCES Product(PK_Product_KEY) ON DELETE CASCADE
+        )
+    `;
+    const createOutwardsTable = `
+        CREATE TABLE IF NOT EXISTS Outwards (
+            PK_O_ID INT AUTO_INCREMENT PRIMARY KEY,
+            O_Date DATE NOT NULL,
+            O_Time TIME NOT NULL,
+            FK_Product_KEY VARCHAR(16) NOT NULL,
+            O_Qty INT NOT NULL,
+            O_Price DECIMAL(10, 2) NOT NULL,
+            FOREIGN KEY (FK_Product_KEY) REFERENCES Product(PK_Product_KEY) ON DELETE CASCADE
+        )
+    `;
+
+    await executeSchemaQuery(createProductTable, "Product");
+    await executeSchemaQuery(createStockTable, "Product Stock");
+    await executeSchemaQuery(createInwardsTable, "Inwards");
+    await executeSchemaQuery(createOutwardsTable, "Outwards");
 };
 
 export const createIssueHistoryTable = async () => {
@@ -66,20 +108,13 @@ export const createIssueHistoryTable = async () => {
             bookId INT NOT NULL,
             issueDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             dueDate DATE NOT NULL,
-            returnDate DATE,
+            returnDate DATETIME,
             status ENUM('issued', 'returned', 'overdue') DEFAULT 'issued',
-            fine DECIMAL(10, 2) DEFAULT 0,
             FOREIGN KEY (memberId) REFERENCES members(id) ON DELETE CASCADE,
-            FOREIGN KEY (bookId) REFERENCES books(id) ON DELETE CASCADE
+            FOREIGN KEY (bookId) REFERENCES Product(PK_Product_id) ON DELETE CASCADE
         )
     `;
-    
-    try {
-        await db.query(createTable);
-        console.log("Issue History table created/verified");
-    } catch (error) {
-        console.error("Error creating issueHistory table:", error.message);
-    }
+    await executeSchemaQuery(createTable, "Issue History");
 };
 
 export const createStudyroomTable = async () => {
@@ -94,13 +129,7 @@ export const createStudyroomTable = async () => {
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
     `;
-    
-    try {
-        await db.query(createTable);
-        console.log("Study Rooms table created/verified");
-    } catch (error) {
-        console.error("Error creating studyrooms table:", error.message);
-    }
+    await executeSchemaQuery(createTable, "Study Rooms");
 };
 
 export const createAdminsTable = async () => {
@@ -116,35 +145,26 @@ export const createAdminsTable = async () => {
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
     `;
-    
-    try {
-        await db.query(createTable);
-        console.log("Admins table created/verified");
-    } catch (error) {
-        console.error("Error creating admins table:", error.message);
-    }
+    await executeSchemaQuery(createTable, "Admins");
 };
 
 export const createStudyroomBookingsTable = async () => {
     const createTable = `
         CREATE TABLE IF NOT EXISTS studyroom_bookings (
             id INT AUTO_INCREMENT PRIMARY KEY,
+            memberId INT NOT NULL,
             roomId INT NOT NULL,
             bookingDate DATE NOT NULL,
             startTime TIME NOT NULL,
             endTime TIME NOT NULL,
             status ENUM('pending', 'confirmed', 'cancelled', 'completed') DEFAULT 'confirmed',
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT chk_valid_member_id CHECK (memberId > 0),
+            FOREIGN KEY (memberId) REFERENCES members(id) ON DELETE CASCADE,
             FOREIGN KEY (roomId) REFERENCES studyrooms(id) ON DELETE CASCADE
         )
     `;
-    
-    try {
-        await db.query(createTable);
-        console.log("Study Room Bookings table created/verified");
-    } catch (error) {
-        console.error("Error creating studyroom_bookings table:", error.message);
-    }
+    await executeSchemaQuery(createTable, "Study Room Bookings");
 };
 
 export const createWishlistTable = async () => {
@@ -155,15 +175,9 @@ export const createWishlistTable = async () => {
             bookId INT NOT NULL,
             addedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (memberId) REFERENCES members(id) ON DELETE CASCADE,
-            FOREIGN KEY (bookId) REFERENCES books(id) ON DELETE CASCADE,
+            FOREIGN KEY (bookId) REFERENCES Product(PK_Product_id) ON DELETE CASCADE,
             UNIQUE KEY unique_wishlist (memberId, bookId)
         )
     `;
-    
-    try {
-        await db.query(createTable);
-        console.log("Wishlist table created/verified");
-    } catch (error) {
-        console.error("Error creating wishlist table:", error.message);
-    }
+    await executeSchemaQuery(createTable, "Wishlist");
 };

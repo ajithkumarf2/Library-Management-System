@@ -54,7 +54,7 @@ const Analytics = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {stats.map((stat, i) => (
                     <div key={i} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 group hover:shadow-md transition-all">
                         <div className={`${stat.color} w-12 h-12 rounded-2xl text-white flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform shadow-lg`}>
@@ -98,44 +98,41 @@ const Analytics = () => {
                     {activity.length === 0 ? (
                         <div className="text-center py-10 text-slate-400 italic">No activity data recorded in the last 6 months.</div>
                     ) : (
-                        <div className="flex items-end justify-between h-48 gap-2">
-                            {activity.map((item, i) => (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                                    <div 
-                                        className="w-full bg-blue-100 rounded-t-xl group relative cursor-pointer"
-                                        style={{ height: `${(item.count / Math.max(...activity.map(a => a.count))) * 100}%` }}
-                                    >
-                                        <div className="absolute inset-0 bg-blue-600 rounded-t-xl scale-y-0 group-hover:scale-y-100 transition-transform origin-bottom duration-300"></div>
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                            {item.count} books
-                                        </div>
+                        (() => {
+                            const maxCount = Math.max(...activity.map(a => Number(a.count || 0)), 0) || 1;
+                            return (
+                                <div className="flex flex-col justify-between h-48">
+                                    <div className="flex items-end justify-between h-40 gap-2">
+                                        {activity.map((item, i) => {
+                                            const barHeight = `${(Number(item.count || 0) / maxCount) * 100}%`;
+                                            return (
+                                                <div key={i} className="flex-1 h-full flex items-end">
+                                                    <div 
+                                                        className="w-full bg-blue-100 rounded-t-xl group relative cursor-pointer"
+                                                        style={{ height: barHeight }}
+                                                    >
+                                                        <div className="absolute inset-0 bg-blue-600 rounded-t-xl scale-y-0 group-hover:scale-y-100 transition-transform origin-bottom duration-300"></div>
+                                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                                            {item.count} books
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase">{item.month}</span>
+                                    <div className="flex justify-between gap-2 mt-2">
+                                        {activity.map((item, i) => (
+                                            <span key={i} className="flex-1 text-center text-[10px] font-bold text-slate-400 uppercase">{item.month}</span>
+                                        ))}
+                                    </div>
                                 </div>
-                            ))}
-                        </div>
+                            );
+                        })()
                     )}
                 </div>
             </div>
 
-            {/* Achievement Section */}
-            {data?.stats[0]?.value > 0 && (
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-3xl text-white flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="space-y-2 text-center md:text-left">
-                        <h3 className="text-2xl font-bold">Great progress! 🚀</h3>
-                        <p className="text-slate-400">You have read {data.stats[0].value} books so far. Keep exploring our library!</p>
-                    </div>
-                    <div className="flex gap-4">
-                        <div className="bg-white/10 p-4 rounded-2xl flex items-center gap-3">
-                            <div className="bg-yellow-500 w-10 h-10 rounded-full flex items-center justify-center text-slate-900 font-bold">★</div>
-                            <div>
-                                <p className="text-xs text-slate-400 uppercase">Current Badge</p>
-                                <p className="font-bold">Avid Reader</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 };

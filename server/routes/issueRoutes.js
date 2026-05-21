@@ -1,5 +1,5 @@
 import express from 'express';
-import { issueBook, returnBook, getIssueHistory, getIssuedBooks, getReturnedBooks, getOverdueBooks, getMemberIssues, selfIssueBook, selfReturnBook, getMemberAnalytics } from '../controller/issueController.js';
+import { issueBook, returnBook, getIssueHistory, getIssuedBooks, getReturnedBooks, getOverdueBooks, getMemberIssues, selfIssueBook, selfReturnBook, getMemberAnalytics, getBookMembers } from '../controller/issueController.js';
 import { verifyAdmin, verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -17,5 +17,6 @@ router.get('/history', verifyAdmin, getIssueHistory);
 router.get('/issued', verifyAdmin, getIssuedBooks);
 router.get('/returned', verifyAdmin, getReturnedBooks);
 router.get('/overdue', verifyAdmin, getOverdueBooks);
+router.get('/book/:bookId', verifyAdmin, getBookMembers);
 
 export default router;

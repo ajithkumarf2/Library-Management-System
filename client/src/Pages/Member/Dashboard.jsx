@@ -64,7 +64,7 @@ const MemberDashboard = () => {
         try {
             await axios.put(`/issues/self-return/${issueId}`);
             toast.success('Book returned successfully');
-            fetchMemberIssues(); // Refresh dashboard data
+            fetchData(); // Refresh dashboard data
         } catch (error) {
             console.error('Return error:', error);
             toast.error(error.response?.data?.message || 'Failed to return book');

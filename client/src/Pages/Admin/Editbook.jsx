@@ -16,7 +16,8 @@ const Editbook = () => {
         quantity: '',
         description: '',
         shelfLocation: '',
-        document: ''
+        document: '',
+        productKey: ''
     })
 
     const [file, setFile] = useState(null)
@@ -37,7 +38,8 @@ const Editbook = () => {
                 quantity: book.quantity || '',
                 description: book.description || '',
                 shelfLocation: book.shelfLocation || '',
-                document: book.document || ''
+                document: book.document || '',
+                productKey: book.PK_Product_KEY || ''
             })
         } catch (error) {
             console.error('Fetch book error:', error)
@@ -72,7 +74,9 @@ const Editbook = () => {
         try {
             const data = new FormData()
             Object.keys(formData).forEach(key => {
-                data.append(key, formData[key])
+                if (key !== 'productKey') {
+                    data.append(key, formData[key])
+                }
             })
             if (file) {
                 data.append('document', file)
@@ -106,6 +110,8 @@ const Editbook = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+
                     <div>
                         <label className="block text-gray-700 font-medium mb-2">Book Title *</label>
                         <input

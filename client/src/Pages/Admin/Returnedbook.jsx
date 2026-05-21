@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import axios from 'axios'
 
+// Helper function to calculate fine (₹1 per day)
+const calculateFine = (returnDate, dueDate) => {
+    if (!returnDate) return 0;
+    const returnD = new Date(returnDate);
+    const dueD = new Date(dueDate);
+    const daysOverdue = Math.floor((returnD - dueD) / (1000 * 60 * 60 * 24));
+    return Math.max(0, daysOverdue) * 1; // ₹1 per day
+};
+
 
 const Returnedbook = () => {
     const [issuedBooks, setIssuedBooks] = useState([])
@@ -55,8 +64,9 @@ const Returnedbook = () => {
                         <tr>
                             <th className="px-4 py-3 text-left font-semibold">Book Title</th>
                             <th className="px-4 py-3 text-left font-semibold">Member Name</th>
-                            <th className="px-4 py-3 text-left font-semibold">Issue Date</th>
+                            <th className="px-4 py-3 text-left font-semibold">Issue Date & Time</th>
                             <th className="px-4 py-3 text-left font-semibold">Due Date</th>
+                            <th className="px-4 py-3 text-left font-semibold">Fine (₹)</th>
                             <th className="px-4 py-3 text-left font-semibold">Status</th>
                             <th className="px-4 py-3 text-left font-semibold">Action</th>
                         </tr>
@@ -64,19 +74,25 @@ const Returnedbook = () => {
                     <tbody>
                         {issuedBooks.length === 0 ? (
                             <tr>
-                                <td colSpan="6" className="px-4 py-4 text-center text-gray-500">
+                                <td colSpan="7" className="px-4 py-4 text-center text-gray-500">
                                     No issued books
                                 </td>
                             </tr>
                         ) : (
                             issuedBooks.map(issue => {
                                 const isOverdue = new Date(issue.dueDate) < new Date()
+                                const fine = isOverdue ? calculateFine(new Date().toISOString().split('T')[0], issue.dueDate) : 0
                                 return (
                                     <tr key={issue.id} className="border-b hover:bg-gray-50">
                                         <td className="px-4 py-3">{issue.bookTitle || 'N/A'}</td>
                                         <td className="px-4 py-3">{issue.memberName || 'N/A'}</td>
-                                        <td className="px-4 py-3">{new Date(issue.issueDate).toLocaleDateString()}</td>
+                                        <td className="px-4 py-3">
+                                            {new Date(issue.issueDate).toLocaleDateString()} {new Date(issue.issueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </td>
                                         <td className="px-4 py-3">{new Date(issue.dueDate).toLocaleDateString()}</td>
+                                        <td className="px-4 py-3 font-semibold text-red-600">
+                                            {fine > 0 ? `₹${fine}` : '-'}
+                                        </td>
                                         <td className="px-4 py-3">
                                             <span className={`px-3 py-1 rounded-full text-white ${isOverdue ? 'bg-red-500' : 'bg-yellow-500'}`}>
                                                 {isOverdue ? 'Overdue' : 'Issued'}

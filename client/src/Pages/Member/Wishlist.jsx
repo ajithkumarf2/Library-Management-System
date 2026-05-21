@@ -32,6 +32,16 @@ const Wishlist = () => {
         }
     };
 
+    const handleIssue = async (bookId) => {
+        try {
+            await axios.post('/issues/self-issue', { bookId });
+            toast.success('Book issued successfully!');
+            fetchWishlist();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to issue book');
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center gap-4">
@@ -85,9 +95,10 @@ const Wishlist = () => {
                                         <td className="px-8 py-6">
                                             <div className="flex justify-center gap-3">
                                                 <button 
-                                                    onClick={() => toast.success('Added to issue list')}
+                                                    onClick={() => handleIssue(item.id)}
                                                     disabled={item.availableQuantity <= 0}
                                                     className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-30 disabled:hover:bg-blue-600 transition-all shadow-md shadow-blue-100"
+                                                    title="Issue Book"
                                                 >
                                                     <FiShoppingCart />
                                                 </button>

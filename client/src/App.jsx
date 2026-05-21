@@ -17,11 +17,11 @@ import Editbook from './Pages/Admin/Editbook'
 import MemberDashboard from './Pages/Member/Dashboard'
 import MemberLayout from './Pages/Member/MemberLayout'
 import BrowseBooks from './Pages/Member/BrowseBooks'
-import AIRecommendations from './Pages/Member/AIRecommendations'
 import Wishlist from './Pages/Member/Wishlist'
 import Analytics from './Pages/Member/Analytics'
 import IssuedBooks from './Pages/Member/IssuedBooks'
 import ReturnedBooks from './Pages/Member/ReturnedBooks'
+import StudyRoom from './Pages/Member/StudyRoom'
 
 const PrivateRoute = ({ children }) => {
     const isAdmin = sessionStorage.getItem('libraAdminToken');
@@ -84,11 +84,11 @@ const App = () => {
                 <Routes>
                   <Route path='dashboard' element={<MemberDashboard />} />
                   <Route path='browse' element={<BrowseBooks />} />
-                  <Route path='ai-recs' element={<AIRecommendations />} />
                   <Route path='wishlist' element={<Wishlist />} />
                   <Route path='analytics' element={<Analytics />} />
                   <Route path='issued' element={<IssuedBooks />} />
                   <Route path='returned' element={<ReturnedBooks />} />
+                  <Route path='studyroom' element={<StudyRoom />} />
                   <Route path='*' element={<Navigate to="dashboard" />} />
                 </Routes>
               </MemberLayout>

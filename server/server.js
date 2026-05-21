@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import "dotenv/config";
 import "./config/db.js";
 import { 
+    createMemberAddressTable,
     createMembersTable, 
     createBooksTable, 
     createIssueHistoryTable, 
@@ -18,7 +19,6 @@ import bookRoutes from "./routes/bookRoutes.js";
 import issueRoutes from "./routes/issueRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import studyRoomRoutes from "./routes/studyRoomRoutes.js";
-import aiRoutes from "./routes/aiRoutes.js";
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -49,6 +49,7 @@ app.use('/uploads', express.static('uploads'));
 
 // Initialize database tables
 const initializeTables = async () => {
+    await createMemberAddressTable();
     await createMembersTable();
     await createBooksTable();
     await createIssueHistoryTable();
@@ -71,7 +72,6 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/issues", issueRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/studyroom", studyRoomRoutes);
-app.use("/api/ai", aiRoutes);
 
 // Start server
 app.listen(PORT, () => {

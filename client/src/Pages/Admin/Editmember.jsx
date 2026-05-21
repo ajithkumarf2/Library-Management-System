@@ -9,23 +9,41 @@ const Editmember = () => {
     const [loading, setLoading] = useState(false)
     const [fetching, setFetching] = useState(true)
     const [formData, setFormData] = useState({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         phone: '',
         membershipType: 'standard',
-        address: ''
+        street: '',
+        city: '',
+        state: '',
+        pincode: ''
     })
 
     useEffect(() => {
         const fetchMember = async () => {
             try {
                 const response = await axios.get(`/members/${id}`)
+                
+                const fullName = response.data.name || ''
+                const firstSpaceIndex = fullName.indexOf(' ')
+                let firstName = fullName
+                let lastName = ''
+                if (firstSpaceIndex !== -1) {
+                    firstName = fullName.substring(0, firstSpaceIndex)
+                    lastName = fullName.substring(firstSpaceIndex + 1)
+                }
+
                 setFormData({
-                    name: response.data.name || '',
+                    firstName: firstName,
+                    lastName: lastName,
                     email: response.data.email || '',
                     phone: response.data.phone || '',
                     membershipType: response.data.membershipType || 'standard',
-                    address: response.data.address || ''
+                    street: response.data.street || '',
+                    city: response.data.city || '',
+                    state: response.data.state || '',
+                    pincode: response.data.pincode || ''
                 })
             } catch (error) {
                 console.error('Fetch member error:', error)
@@ -49,14 +67,31 @@ const Editmember = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        if (!formData.name || !formData.email) {
-            toast.error('Name and email are required')
+        const fullName = `${formData.firstName} ${formData.lastName}`.trim()
+
+        if (!fullName || !formData.email) {
+            toast.error('First name, last name, and email are required')
+            return
+        }
+
+        if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
+            toast.error('Phone number must be exactly 10 digits')
             return
         }
 
         setLoading(true)
         try {
-            const response = await axios.put(`/members/${id}`, formData);
+            const payload = {
+                name: fullName,
+                email: formData.email,
+                phone: formData.phone,
+                membershipType: formData.membershipType,
+                street: formData.street,
+                city: formData.city,
+                state: formData.state,
+                pincode: formData.pincode
+            }
+            const response = await axios.put(`/members/${id}`, payload);
 
             if (response.status === 200) {
                 toast.success('Member updated successfully!')
@@ -83,13 +118,25 @@ const Editmember = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-gray-700 font-medium mb-2">Name *</label>
+                        <label className="block text-gray-700 font-medium mb-2">First Name *</label>
                         <input
                             type="text"
-                            name="name"
-                            value={formData.name}
+                            name="firstName"
+                            value={formData.firstName}
                             onChange={handleChange}
-                            placeholder="Enter member name"
+                            placeholder="Enter first name"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-gray-700 font-medium mb-2">Last Name *</label>
+                        <input
+                            type="text"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            placeholder="Enter last name"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
@@ -113,6 +160,7 @@ const Editmember = () => {
                             name="phone"
                             value={formData.phone}
                             onChange={handleChange}
+                            maxLength={10}
                             placeholder="Enter phone number"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -135,14 +183,40 @@ const Editmember = () => {
 
                 <div>
                     <label className="block text-gray-700 font-medium mb-2">Address</label>
-                    <textarea
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        placeholder="Enter member address"
-                        rows="3"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input
+                            type="text"
+                            name="street"
+                            value={formData.street}
+                            onChange={handleChange}
+                            placeholder="Street Address"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <input
+                            type="text"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleChange}
+                            placeholder="City"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <input
+                            type="text"
+                            name="state"
+                            value={formData.state}
+                            onChange={handleChange}
+                            placeholder="State"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <input
+                            type="text"
+                            name="pincode"
+                            value={formData.pincode}
+                            onChange={handleChange}
+                            placeholder="Pincode"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex gap-4">

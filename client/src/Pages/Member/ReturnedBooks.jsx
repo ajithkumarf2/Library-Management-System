@@ -43,8 +43,8 @@ const ReturnedBooks = () => {
                         <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-widest">
                             <tr>
                                 <th className="px-8 py-4">Book Details</th>
-                                <th className="px-8 py-4">Issue Date</th>
-                                <th className="px-8 py-4">Return Date</th>
+                                <th className="px-8 py-4">Issue Date & Time</th>
+                                <th className="px-8 py-4">Return Date & Time</th>
                                 <th className="px-8 py-4">Status</th>
                             </tr>
                         </thead>
@@ -71,9 +71,14 @@ const ReturnedBooks = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-sm text-slate-600 font-medium">{new Date(issue.issueDate).toLocaleDateString()}</td>
                                         <td className="px-8 py-6 text-sm text-slate-600 font-medium">
-                                            {issue.returnDate ? new Date(issue.returnDate).toLocaleDateString() : 'N/A'}
+                                            {new Date(issue.issueDate).toLocaleDateString()} {new Date(issue.issueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </td>
+                                        <td className="px-8 py-6 text-sm text-slate-600 font-medium">
+                                            {issue.returnDate 
+                                                ? `${new Date(issue.returnDate).toLocaleDateString()} ${new Date(issue.returnDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                                : 'N/A'
+                                            }
                                         </td>
                                         <td className="px-8 py-6">
                                             <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">

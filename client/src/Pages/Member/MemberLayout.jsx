@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-    FiHome, FiBook, FiHeart, FiPieChart, FiCpu, FiBell, FiLogOut, FiMenu, FiX, FiBookOpen, FiCheckCircle 
+    FiHome, FiBook, FiHeart, FiPieChart, FiCpu, FiBell, FiLogOut, FiMenu, FiX, FiBookOpen, FiCheckCircle, FiGrid
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -22,8 +22,8 @@ const MemberLayout = ({ children }) => {
         { path: '/user/browse', icon: <FiBook />, label: 'Browse Books' },
         { path: '/user/issued', icon: <FiBookOpen />, label: 'Issued Books' },
         { path: '/user/returned', icon: <FiCheckCircle />, label: 'Returned Books' },
-        { path: '/user/ai-recs', icon: <FiCpu />, label: 'AI Recommendations' },
         { path: '/user/wishlist', icon: <FiHeart />, label: 'Wishlist' },
+        { path: '/user/studyroom', icon: <FiGrid />, label: 'Study Room' },
         { path: '/user/analytics', icon: <FiPieChart />, label: 'My Analytics' },
     ];
 

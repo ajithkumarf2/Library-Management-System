@@ -2,7 +2,7 @@ import db from '../config/db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-// Admin Login
+// Admin Registration
 export const registerAdmin = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -73,7 +73,7 @@ export const adminLogin = async (req, res) => {
 export const getDashboardStats = async (req, res) => {
     try {
         const [totalMembers] = await db.query('SELECT COUNT(*) as count FROM members');
-        const [totalBooks] = await db.query('SELECT COUNT(*) as count FROM books');
+        const [totalBooks] = await db.query('SELECT COUNT(*) as count FROM Product');
         const [issuedBooks] = await db.query('SELECT COUNT(*) as count FROM issueHistory WHERE status = "issued"');
         const [overdueBooks] = await db.query('SELECT COUNT(*) as count FROM issueHistory WHERE status = "issued" AND dueDate < CURDATE()');
 
