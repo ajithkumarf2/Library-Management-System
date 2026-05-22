@@ -3,13 +3,13 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import "dotenv/config";
 import "./config/db.js";
-import { 
+import {
     createMemberAddressTable,
-    createMembersTable, 
-    createBooksTable, 
-    createIssueHistoryTable, 
-    createStudyroomTable, 
-    createAdminsTable, 
+    createMembersTable,
+    createBooksTable,
+    createIssueHistoryTable,
+    createStudyroomTable,
+    createAdminsTable,
     createStudyroomBookingsTable,
     createWishlistTable
 } from "./model/Member.js";
@@ -33,7 +33,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173', 
+    origin: process.env.CLIENT_URL,
     credentials: true
 }));
 

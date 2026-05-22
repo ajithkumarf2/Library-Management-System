@@ -119,11 +119,12 @@ export const createIssueHistoryTable = async () => {
 
 export const createStudyroomTable = async () => {
     const createTable = `
-        CREATE TABLE IF NOT EXISTS studyrooms (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            roomNumber VARCHAR(50) NOT NULL UNIQUE,
-            capacity INT NOT NULL,
-            availableSeats INT NOT NULL,
+        CREATE TABLE IF NOT EXISTS Study_Room (
+            PK_Study_Room_id INT AUTO_INCREMENT PRIMARY KEY,
+            Study_Room_Number VARCHAR(50) NOT NULL UNIQUE,
+            Study_Room_Capacity INT NOT NULL,
+            Study_Room_Available_Seats INT NOT NULL,
+            PK_Study_Room_KEY VARCHAR(16) NOT NULL UNIQUE,
             status ENUM('available', 'occupied', 'maintenance') DEFAULT 'available',
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -150,18 +151,18 @@ export const createAdminsTable = async () => {
 
 export const createStudyroomBookingsTable = async () => {
     const createTable = `
-        CREATE TABLE IF NOT EXISTS studyroom_bookings (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            memberId INT NOT NULL,
-            roomId INT NOT NULL,
-            bookingDate DATE NOT NULL,
-            startTime TIME NOT NULL,
-            endTime TIME NOT NULL,
+        CREATE TABLE IF NOT EXISTS Study_Room_Booking (
+            PK_SRB_ID INT AUTO_INCREMENT PRIMARY KEY,
+            FK_Member_id INT NOT NULL,
+            FK_Study_Room_KEY VARCHAR(16) NOT NULL,
+            SRB_Date DATE NOT NULL,
+            SRB_Start_Time TIME NOT NULL,
+            SRB_End_Time TIME NOT NULL,
             status ENUM('pending', 'confirmed', 'cancelled', 'completed') DEFAULT 'confirmed',
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT chk_valid_member_id CHECK (memberId > 0),
-            FOREIGN KEY (memberId) REFERENCES members(id) ON DELETE CASCADE,
-            FOREIGN KEY (roomId) REFERENCES studyrooms(id) ON DELETE CASCADE
+            CONSTRAINT chk_valid_member_id CHECK (FK_Member_id > 0),
+            FOREIGN KEY (FK_Member_id) REFERENCES members(id) ON DELETE CASCADE,
+            FOREIGN KEY (FK_Study_Room_KEY) REFERENCES Study_Room(PK_Study_Room_KEY) ON DELETE CASCADE
         )
     `;
     await executeSchemaQuery(createTable, "Study Room Bookings");
@@ -169,14 +170,14 @@ export const createStudyroomBookingsTable = async () => {
 
 export const createWishlistTable = async () => {
     const createTable = `
-        CREATE TABLE IF NOT EXISTS wishlist (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            memberId INT NOT NULL,
-            bookId INT NOT NULL,
+        CREATE TABLE IF NOT EXISTS Wishlist (
+            PK_Wishlist_id INT AUTO_INCREMENT PRIMARY KEY,
+            FK_Member_id INT NOT NULL,
+            FK_Product_KEY VARCHAR(16) NOT NULL,
             addedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (memberId) REFERENCES members(id) ON DELETE CASCADE,
-            FOREIGN KEY (bookId) REFERENCES Product(PK_Product_id) ON DELETE CASCADE,
-            UNIQUE KEY unique_wishlist (memberId, bookId)
+            FOREIGN KEY (FK_Member_id) REFERENCES members(id) ON DELETE CASCADE,
+            FOREIGN KEY (FK_Product_KEY) REFERENCES Product(PK_Product_KEY) ON DELETE CASCADE,
+            UNIQUE KEY unique_wishlist (FK_Member_id, FK_Product_KEY)
         )
     `;
     await executeSchemaQuery(createTable, "Wishlist");

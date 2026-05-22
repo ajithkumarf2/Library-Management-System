@@ -9,10 +9,17 @@ export const addToWishlist = async (req, res) => {
     }
 
     try {
+        // Fetch corresponding PK_Product_KEY for the bookId
+        const [product] = await db.query('SELECT PK_Product_KEY FROM Product WHERE PK_Product_id = ?', [bookId]);
+        if (product.length === 0) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+        const productKey = product[0].PK_Product_KEY;
+
         // Check if already in wishlist
         const [existing] = await db.query(
-            "SELECT * FROM wishlist WHERE memberId = ? AND bookId = ?",
-            [memberId, bookId]
+            "SELECT * FROM Wishlist WHERE FK_Member_id = ? AND FK_Product_KEY = ?",
+            [memberId, productKey]
         );
 
         if (existing.length > 0) {
@@ -20,8 +27,8 @@ export const addToWishlist = async (req, res) => {
         }
 
         await db.query(
-            "INSERT INTO wishlist (memberId, bookId) VALUES (?, ?)",
-            [memberId, bookId]
+            "INSERT INTO Wishlist (FK_Member_id, FK_Product_KEY) VALUES (?, ?)",
+            [memberId, productKey]
         );
 
         res.status(201).json({ message: "Added to wishlist successfully" });
@@ -36,11 +43,11 @@ export const getWishlist = async (req, res) => {
 
     try {
         const [wishlist] = await db.query(
-            `SELECT w.id as wishlistId, p.PK_Product_id as id, p.Product_name as title, p.Product_short_desc as author, p.Product_long_desc as description, p.PK_Product_KEY, p.isbn, p.category, p.shelfLocation, p.document, p.status, p.createdAt, p.updatedAt, ps.QTY as quantity, ps.Available as availableQuantity
-             FROM wishlist w 
-             JOIN Product p ON w.bookId = p.PK_Product_id 
+            `SELECT w.PK_Wishlist_id as wishlistId, p.PK_Product_id as id, p.Product_name as title, p.Product_short_desc as author, p.Product_long_desc as description, p.PK_Product_KEY, p.isbn, p.category, p.shelfLocation, p.document, p.status, p.createdAt, p.updatedAt, ps.QTY as quantity, ps.Available as availableQuantity
+             FROM Wishlist w 
+             JOIN Product p ON w.FK_Product_KEY = p.PK_Product_KEY 
              LEFT JOIN Product_Stock ps ON p.PK_Product_id = ps.Product_ID
-             WHERE w.memberId = ?`,
+             WHERE w.FK_Member_id = ?`,
             [memberId]
         );
 
@@ -57,7 +64,7 @@ export const removeFromWishlist = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            "DELETE FROM wishlist WHERE memberId = ? AND bookId = ?",
+            "DELETE FROM Wishlist WHERE FK_Member_id = ? AND FK_Product_KEY = (SELECT PK_Product_KEY FROM Product WHERE PK_Product_id = ?)",
             [memberId, id]
         );
 
